@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Playfair:ital,opsz,wght@0,5..1200,300..900;1,5..1200,300..900&display=swap');
+@import "tailwindcss";
+
+:root {
+    --color-primary: #2563EB;
+    --color-secondary: #FBBF24;
+}
+
+
+*{
+    font-family: Outfit;
+}
+
+.font-playfair{
+    font-family: Playfair !important;
+}
+
+/* Small animation utilities */
+.fade-in-up {
+    transform: translateY(8px);
+    opacity: 0;
+    transition: transform 400ms ease, opacity 400ms ease;
+}
+.fade-in-up.visible {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Underline transition */
+.nav-underline {
+    position: relative;
+}
+.nav-underline::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -4px;
+    height: 1px;
+    background: #FBBF24; /* theme yellow */
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 240ms ease;
+}
+.nav-underline.active::after {
+    transform: scaleX(1);
+}
+
+/* Curved (pill) underline variant */
+.curved-underline::after {
+    content: '';
+    position: absolute;
+    /* make the underline centered and shorter than the text */
+        left: 20%;
+        right: 20%;
+        bottom: -6px;
+        height: 2px;
+    background: linear-gradient(90deg, rgba(251,191,36,1) 0%, rgba(245,158,11,1) 100%);
+    border-radius: 999px;
+    transform: scaleX(0);
+    transform-origin: center center;
+    transition: transform 300ms cubic-bezier(.22,1,.36,1), opacity 220ms ease;
+    opacity: 0.95;
+}
+.curved-underline.active::after {
+    transform: scaleX(1);
+}
+
+/* Responsive tuning: smaller on mobile, larger on medium+ screens */
+@media (max-width: 640px) {
+    .curved-underline::after {
+        left: 28%;
+        right: 28%;
+        bottom: -5px;
+        height: 2px;
+        transition: transform 260ms cubic-bezier(.22,1,.36,1), opacity 200ms ease;
+    }
+}
+
+@media (min-width: 768px) {
+    .curved-underline::after {
+        left: 14%;
+        right: 14%;
+        bottom: -7px;
+        height: 2px;
+        transition: transform 320ms cubic-bezier(.18,1,.35,1), opacity 240ms ease;
+    }
+}
+
+/* Make touch targets a bit larger for mobile - adds padding visually while keeping layout */
+.touch-safe {
+    padding-top: 0.25rem; /* 4px */
+    padding-bottom: 0.25rem;
+}
