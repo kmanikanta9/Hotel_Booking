@@ -10,7 +10,7 @@ const clerkWebhooks = async (req, res) => {
       'svix-timestamp': req.headers['svix-timestamp'],
       'svix-signature': req.headers['svix-signature']
     }
-
+   
     // Convert buffer to string
     const payloadString = req.body.toString('utf8')
 
@@ -42,7 +42,7 @@ const clerkWebhooks = async (req, res) => {
       default:
         break
     }
-
+   
     res.json({ success: true, message: "Webhook Received" })
   } catch (error) {
     console.log(error.message)

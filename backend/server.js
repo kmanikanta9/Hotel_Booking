@@ -10,17 +10,17 @@ connectDB()
 const app = express()
 app.use(cors())
 
-// Middleware
+// Clerk webhook (must be raw, no json parsing before this)
+app.post(
+  '/api/clerk',
+  express.raw({ type: 'application/json' }),
+  clerkWebhooks
+)
+
+// JSON parser for other routes
 app.use(express.json())
 
 app.use(clerkMiddleware())
-
-// Clerk webhook needs raw body, so we use express.raw()
-app.post(
-  '/api/clerk',
-  express.raw({ type: 'application/json' }), 
-  clerkWebhooks
-)
 
 app.get('/', (req, res) => res.send('API is working.'))
 
