@@ -1,6 +1,7 @@
-import { useClerk, useUser,UserButton } from "@clerk/clerk-react";
+import { useClerk,UserButton } from "@clerk/clerk-react";
 import React, { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useAppContext } from "../context/AppContext";
 const BookIcon = ()=>(
     <svg className="w-4 h-4 text-gray-700" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" >
     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 19V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v13H7a2 2 0 0 0-2 2Zm0 0a2 2 0 0 0 2 2h12M9 3v14m7 0v4" />
@@ -11,10 +12,12 @@ const Navbar = () => {
   const [active, setActive] = useState('/home');
   const [roomsOpen, setRoomsOpen] = useState(false); // dropdown for Rooms
   const closeTimeout = useRef(null);
-  const navigate = useNavigate();
+
   const location = useLocation();
   const {openSignIn} =useClerk()
-  const {user} = useUser()
+
+
+  const {user,navigate,isOwner,setShowHotelReg} = useAppContext()
 
   const handleNavScroll = (sectionId, e, opts = {}) => {
     // opts.closeMenu: whether to close mobile menu
@@ -90,7 +93,9 @@ const Navbar = () => {
           <div className="flex items-center flex-shrink-0">
             <h1 className="text-2xl md:text-2xl  tracking-widest text-white">LUXURYHOTEL</h1>
           </div>
-
+          {
+            user && (<button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer `} onClick={()=> isOwner ? navigate('/owner'):setShowHotelReg(true)}>{isOwner ?'Dashboard':'List Your Hotel'}</button>)
+          }
           {/* Desktop links */}
           <div className="hidden md:flex items-center space-x-8">
             <ul className="flex space-x-8 text-white font-medium items-center">
@@ -198,6 +203,9 @@ const Navbar = () => {
   } md:hidden transition-all duration-200 ease-in-out`}
 >
   <div className="bg-black/90 text-white px-3 py-4">
+  {
+            user && (<button className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all `} onClick={()=> isOwner ? navigate('/owner'):setShowHotelReg(true)}>{isOwner ?'Dashboard':'List Your Hotel'}</button>)
+          }
     <ul className="flex flex-col gap-2 w-full">
       {/* Home */}
       <li>
