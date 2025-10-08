@@ -13,19 +13,24 @@ export const getUserData = async(req,res)=>{
 
 // Store user recent searched cities
 
-export const storeRecentSearchedCities = async(req,res)=>{
+export const storeRecentSearchedCities = async (req, res) => {
     try {
-        const {recentSearchedCity} = req.body
-        const user = await req.user;
-        if(user.recentSearchedCities.length<3){
-            user.recentSearchedCities.push(recentSearchedCity)
-        }else{
+        const { recentSearchedCity } = req.body;
+        const user = req.user;
+
+        if (!user.recentSearchedCities) user.recentSearchedCities = [];
+
+        if (user.recentSearchedCities.length < 3) {
+            user.recentSearchedCities.push(recentSearchedCity);
+        } else {
             user.recentSearchedCities.shift();
-            user.recentSearchedCities.push(recentSearchedCity)
+            user.recentSearchedCities.push(recentSearchedCity);
         }
-        await user.save()
-        res.json({success:true,message:"city added"})
+
+        await user.save();
+
+        res.json({ success: true, message: "City added" });
     } catch (error) {
-         res.json({success:false,message:error.message})
+        res.json({ success: false, message: error.message });
     }
 }
