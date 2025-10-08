@@ -7,7 +7,9 @@ const MyBookings = () => {
   const { axios, getToken, user } = useAppContext();
   const location = useLocation();
   const [bookings, setBookings] = useState([]);
+  const [loadingPayment, setLoadingPayment] = useState(null); // loading state for Pay Now button
 
+  // Fetch user bookings
   const fetchUserBookings = async () => {
     try {
       const token = await getToken();
@@ -24,7 +26,9 @@ const MyBookings = () => {
     }
   };
 
+  // Handle Stripe payment
   const handlePayment = async (bookingId) => {
+    setLoadingPayment(bookingId);
     try {
       const token = await getToken();
       const { data } = await axios.post(
@@ -34,12 +38,15 @@ const MyBookings = () => {
       );
 
       if (data.success) {
-        window.location.href = data.url; // redirect to Stripe checkout
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
       } else {
         toast.error(data.message);
+        setLoadingPayment(null);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
+      setLoadingPayment(null);
     }
   };
 
@@ -47,11 +54,12 @@ const MyBookings = () => {
     if (user) {
       fetchUserBookings();
 
+      // Check if redirected from Stripe success
       const params = new URLSearchParams(location.search);
       const sessionId = params.get("session_id");
       if (sessionId) {
         toast.success("Payment Successful!");
-        fetchUserBookings(); // refresh bookings
+        fetchUserBookings(); // refresh bookings after payment
       }
     }
   }, [user, location.search]);
@@ -78,7 +86,8 @@ const MyBookings = () => {
               />
               <div className="flex flex-col gap-1.5 max-md:mt-3 min-md:ml-4">
                 <p className="font-playfair text-2xl">
-                  {booking.hotel.name} <span className="font-inter text-sm">({booking.room.roomType})</span>
+                  {booking.hotel.name}{" "}
+                  <span className="font-inter text-sm">({booking.room.roomType})</span>
                 </p>
                 <p className="text-gray-500 text-sm">{booking.hotel.address}</p>
                 <p className="text-gray-500 text-sm">Guests: {booking.guests}</p>
@@ -89,27 +98,41 @@ const MyBookings = () => {
             <div className="flex flex-row md:items-center md:gap-12 mt-3 gap-8">
               <div>
                 <p>Check-In:</p>
-                <p className="text-gray-500 text-sm">{new Date(booking.checkInDate).toDateString()}</p>
+                <p className="text-gray-500 text-sm">
+                  {new Date(booking.checkInDate).toDateString()}
+                </p>
               </div>
               <div>
                 <p>Check-Out:</p>
-                <p className="text-gray-500 text-sm">{new Date(booking.checkOutDate).toDateString()}</p>
+                <p className="text-gray-500 text-sm">
+                  {new Date(booking.checkOutDate).toDateString()}
+                </p>
               </div>
             </div>
 
             <div className="flex flex-col items-start justify-center pt-3">
               <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${booking.isPaid ? "bg-green-500" : "bg-red-500"}`}></div>
-                <p className={`text-sm ${booking.isPaid ? "text-green-500" : "text-red-500"}`}>
+                <div
+                  className={`w-3 h-3 rounded-full ${
+                    booking.isPaid ? "bg-green-500" : "bg-red-500"
+                  }`}
+                ></div>
+                <p
+                  className={`text-sm ${
+                    booking.isPaid ? "text-green-500" : "text-red-500"
+                  }`}
+                >
                   {booking.isPaid ? "Paid" : "Not Paid"}
                 </p>
               </div>
+
               {!booking.isPaid && (
                 <button
                   onClick={() => handlePayment(booking._id)}
+                  disabled={loadingPayment === booking._id}
                   className="px-4 py-1.5 mt-4 text-xs border border-gray-400 rounded-full hover:bg-gray-50 transition-all cursor-pointer"
                 >
-                  Pay Now
+                  {loadingPayment === booking._id ? "Processing..." : "Pay Now"}
                 </button>
               )}
             </div>
