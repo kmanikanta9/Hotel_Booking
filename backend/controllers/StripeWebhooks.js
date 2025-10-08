@@ -1,34 +1,36 @@
 
 import Booking from "../models/Booking.js";
-import stripe from "stripe";
+import Stripe from "stripe";
 
+export const stripeWebhooks = async (req, res) => {
+  const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const sig = req.headers["stripe-signature"];
+  let event;
 
-export const stripeWebhooks = async(request,response)=>{
-    const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY)
-    const sig = request.headers['stripe-signature']
-    let event;
-    try {
-        event = stripeInstance.webhooks.constructEvent(request.body,sig,process.env.STRIPE_WEBHOOK_SECRET)
+  try {
+    event = stripeInstance.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.log("Webhook Error:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
-    } catch (error) {
-        response.status(400).send(`Webhook Error: ${error.message}`)
-    }
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+    const { bookingId } = session.metadata;
 
-    // Handle the event
+    await Booking.findByIdAndUpdate(bookingId, {
+      isPaid: true,
+      paymentMethod: "Stripe",
+    });
 
-    if(event.type=='payment_intent.succeeded'){
-        const paymentIntent = event.data.object;
-        const paymentIntentId = paymentIntent.id;
+    console.log("Payment succeeded for booking:", bookingId);
+  } else {
+    console.log("Unhandled event type:", event.type);
+  }
 
-        // Getting sesstion metadata
-        const session = await stripeInstance.checkout.sessions.list({
-            payment_intent:paymentIntentId
-        })
-        const {bookingId} = session.data[0].metadata;
-        // Mark payment as paid
-        await Booking.findByIdAndUpdate(bookingId,{isPaid:true,paymentMethod:'Stripe'})
-    }else{
-        console.log('Unhandled event type:',event.type)
-    }
-    response.json({received:true})
-}
+  res.json({ received: true });
+};

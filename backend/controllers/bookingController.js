@@ -5,7 +5,7 @@ import transporter from "../configs/nodemailer.js";
 import Booking from "../models/Booking.js"
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
-import stripe from 'stripe';
+import Stripe from "stripe";
 
 const checkAvailability = async({checkInDate,checkOutDate,room})=>{
     try {
@@ -137,40 +137,39 @@ export const getHotelBookings = async(req,res)=>{
 
 
 // controllers/bookingController.js
-// controllers/bookingController.js
+
 export const stripePayment = async (req, res) => {
   try {
     const { bookingId } = req.body;
     const booking = await Booking.findById(bookingId);
-    const roomData = await Room.findById(booking.room).populate('hotel');
+    const roomData = await Room.findById(booking.room).populate("hotel");
     const totalPrice = booking.totalPrice;
-    const { origin } = req.headers;
-    const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    const line_items = [
-      {
-        price_data: {
-          currency: 'usd',
-          product_data: {               // Fixed typo here
-            name: roomData.hotel.name,
-          },
-          unit_amount: totalPrice * 100,
-        },
-        quantity: 1,
-      },
-    ];
+    const origin = req.headers.origin || process.env.CLIENT_URL || "http://localhost:3000";
 
     const session = await stripeInstance.checkout.sessions.create({
-      line_items,
-      mode: 'payment',
-      success_url: `${origin}/loader/my-bookings`, // Fixed URLs
+      payment_method_types: ["card"], // required
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: roomData.hotel.name,
+            },
+            unit_amount: totalPrice * 100,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${origin}/loader/my-bookings?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/my-bookings`,
       metadata: { bookingId },
     });
 
     res.json({ success: true, url: session.url });
   } catch (error) {
-    console.error('Stripe Payment Error:', error);
-    res.json({ success: false, message: 'Payment Failed' });
+    console.error("Stripe Payment Error:", error);
+    res.json({ success: false, message: "Payment Failed" });
   }
 };
