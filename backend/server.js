@@ -9,6 +9,7 @@ import hotelRouter from './routes/hotelRoutes.js';
 import connectCloudinary from './configs/cloudinary.js';
 import roomRouter from './routes/roomRoutes.js';
 import bookingRouter from './routes/bookingRoutes.js';
+import { stripeWebhooks } from './controllers/StripeWebhooks.js';
 
 connectDB()
 connectCloudinary()
@@ -16,6 +17,10 @@ connectCloudinary()
 const app = express()
 app.use(cors())
 
+// Api to listen to Stripe Webhooks
+// app.post('/api/stripe',express.raw({type:'application/json'}),stripeWebhooks)
+
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhooks);
 // Clerk webhook (must be raw, no json parsing before this)
 app.post(
   '/api/clerk',
