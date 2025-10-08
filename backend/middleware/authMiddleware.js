@@ -1,24 +1,23 @@
+import { getAuth } from "@clerk/express";
 import User from "../models/User.js";
 
 export const protect = async (req, res, next) => {
   try {
-    // Call req.auth() (not req.auth)
-    const { userId } = req.auth();
-
+    const { userId } = getAuth(req);
     if (!userId) {
-      return res.status(401).json({ success: false, message: "Not Authenticated" });
+      return res.status(401).json({ success: false, message: "Not authorized" });
     }
 
-    const user = await User.findById(userId);
-
+    // Fetch user details from DB
+    const user = await User.findOne({ clerkId: userId });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    req.user = user;
+    req.user = user; // ✅ attach to request
     next();
   } catch (error) {
-    console.error("Protect middleware error:", error);
-    res.status(500).json({ success: false, message: "Server error in protect middleware" });
+    console.error("Auth Middleware Error:", error.message);
+    res.status(401).json({ success: false, message: "Unauthorized" });
   }
 };
