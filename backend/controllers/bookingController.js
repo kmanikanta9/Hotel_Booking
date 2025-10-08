@@ -138,15 +138,28 @@ export const getHotelBookings = async(req,res)=>{
 
 // controllers/bookingController.js
 
+
+
+// Initialize Stripe
+const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 export const stripePayment = async (req, res) => {
   try {
     const { bookingId } = req.body;
-    const booking = await Booking.findById(bookingId);
-    const roomData = await Room.findById(booking.room).populate("hotel");
-    const totalPrice = booking.totalPrice;
 
+    // Get booking
+    const booking = await Booking.findById(bookingId);
+    if (!booking) return res.json({ success: false, message: "Booking not found" });
+
+    // Populate room and hotel
+    const roomData = await Room.findById(booking.room).populate("hotel");
+    if (!roomData || !roomData.hotel)
+      return res.json({ success: false, message: "Hotel information not found" });
+
+    const totalPrice = booking.totalPrice;
     const origin = req.headers.origin || process.env.CLIENT_URL || "http://localhost:3000";
 
+    // Create Stripe checkout session
     const session = await stripeInstance.checkout.sessions.create({
       payment_method_types: ["card"], // required
       line_items: [

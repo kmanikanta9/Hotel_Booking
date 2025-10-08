@@ -15,6 +15,8 @@ connectDB()
 connectCloudinary()
 
 const app = express()
+app.use(express.json())
+app.use(clerkMiddleware())
 app.use(cors())
 
 // Api to listen to Stripe Webhooks
@@ -28,9 +30,7 @@ app.post(
 )
 
 // JSON parser for other routes
-app.use(express.json())
 
-app.use(clerkMiddleware())
 
 app.get('/', (req, res) => res.send('API is working.'))
 
