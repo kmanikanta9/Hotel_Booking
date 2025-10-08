@@ -1,14 +1,14 @@
-// controllers/bookingController.js
 import Booking from "../models/Booking.js";
-import stripePackage from "stripe";
 
-const stripe = new stripePackage(process.env.STRIPE_SECRET_KEY);
-
+/**
+ * Stripe Webhook - Handle Payment Completion
+ */
 export const stripeWebhooks = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
 
   try {
+    // Use raw body for webhook
     event = stripe.webhooks.constructEvent(req.rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error("Webhook signature verification failed:", err.message);

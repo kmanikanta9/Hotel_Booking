@@ -137,22 +137,35 @@ export const getHotelBookings = async(req,res)=>{
 
 
 // controllers/bookingController.js
-
 // controllers/bookingController.js
+
 import stripePackage from "stripe";
+// Initialize Stripe with secret key
+const stripe = new stripePackage(process.env.STRIPE_SECRET_KEY);
 
-
+/**
+ * Stripe Payment - Create Checkout Session
+ */
 export const stripePayment = async (req, res) => {
   try {
     const { bookingId } = req.body;
-    const booking = await Booking.findById(bookingId);
-    if (!booking) return res.json({ success: false, message: "Booking not found" });
 
+    // Find booking
+    const booking = await Booking.findById(bookingId);
+    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    // Find room and hotel
     const roomData = await Room.findById(booking.room).populate("hotel");
+    if (!roomData) return res.status(404).json({ success: false, message: "Room not found" });
+
     const totalPrice = booking.totalPrice;
 
-    const stripe = new stripePackage(process.env.STRIPE_SECRET_KEY);
+    // Validate FRONTEND_URL
+    if (!process.env.FRONTEND_URL.startsWith("http")) {
+      return res.status(500).json({ success: false, message: "FRONTEND_URL must include http:// or https://" });
+    }
 
+    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -160,7 +173,7 @@ export const stripePayment = async (req, res) => {
           price_data: {
             currency: "usd",
             product_data: { name: roomData.hotel.name },
-            unit_amount: totalPrice * 100,
+            unit_amount: totalPrice * 100, // Stripe expects cents
           },
           quantity: 1,
         },
@@ -173,7 +186,7 @@ export const stripePayment = async (req, res) => {
 
     res.json({ success: true, url: session.url });
   } catch (error) {
-    console.error("Stripe Payment Error:", error.message);
-    res.json({ success: false, message: "Payment Failed" });
+    console.error("Stripe Payment Error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
