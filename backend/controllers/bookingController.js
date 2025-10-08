@@ -5,7 +5,7 @@ import transporter from "../configs/nodemailer.js";
 import Booking from "../models/Booking.js"
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
-import Stripe from 'stripe';
+import stripe from 'stripe';
 
 const checkAvailability = async({checkInDate,checkOutDate,room})=>{
     try {
@@ -139,54 +139,40 @@ export const getHotelBookings = async(req,res)=>{
 // controllers/bookingController.js
 // controllers/bookingController.js
 
-import stripePackage from "stripe";
-// Initialize Stripe with secret key
-const stripe = new stripePackage(process.env.STRIPE_SECRET_KEY);
+export const stripePayment = async (req,res)=>{
+    try {
+        const {bookingId} = req.body;
+        const booking = await Booking.findById(bookingId)
+        const roomData = await Room.findById(booking.room).populate('hotel')
+        const totalPrice = booking.totalPrice;
+        const {origin} = req.headers
+        const stripeInstance  = new stripe(process.env.STRIPE_SECRET_KEY)
+        const line_items =[
+            {
+                price_data:{
+                    currency:'usd',
+                    proudct_data:{
+                        name:roomData.hotel.name,
+                    },
+                    unit_amount:totalPrice*100
+                },
+                quantity:1
+            }
+        ]
 
-/**
- * Stripe Payment - Create Checkout Session
- */
-export const stripePayment = async (req, res) => {
-  try {
-    const { bookingId } = req.body;
+        // Create checkout session
+        const session = await stripeInstance.checkout.sessions.create({
+            line_items,
+            mode:'payment',
+            success_url:`${origin/loader/my-bookings}`,
+            cancel_url:`${origin/my-bookings}`,
+            metadata:{
+                bookingId,
+            }
 
-    // Find booking
-    const booking = await Booking.findById(bookingId);
-    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
-
-    // Find room and hotel
-    const roomData = await Room.findById(booking.room).populate("hotel");
-    if (!roomData) return res.status(404).json({ success: false, message: "Room not found" });
-
-    const totalPrice = booking.totalPrice;
-
-    // Validate FRONTEND_URL
-    if (!process.env.FRONTEND_URL.startsWith("http")) {
-      return res.status(500).json({ success: false, message: "FRONTEND_URL must include http:// or https://" });
+        })
+        res.json({success:true,url:session.url})
+    } catch (error) {
+        res.json({success:false,message:'Payment Failed'})
     }
-
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: roomData.hotel.name },
-            unit_amount: totalPrice * 100, // Stripe expects cents
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${process.env.FRONTEND_URL}/my-bookings?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/my-bookings`,
-      metadata: { bookingId },
-    });
-
-    res.json({ success: true, url: session.url });
-  } catch (error) {
-    console.error("Stripe Payment Error:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+}
