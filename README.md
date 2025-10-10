@@ -1,4 +1,4 @@
-#LUXURYHOTEL
+# LUXURYHOTEL
 LuxuryHotel is a modern full-stack hotel booking web application designed to provide a seamless and elegant booking experience. It enables users to explore rooms, view amenities, check availability, and make secure reservations with ease. The platform focuses on responsive design, clean UI, and smooth interactions while offering dynamic backend functionality for real-time data handling.
 
 Tech Stack
